@@ -56,18 +56,21 @@ const createEvent = async (req, res) => {
 
 const getEventsWithUsers = async (req, res) => {
   try {
-    // Get all events
     const eventsResult = await pool.query(
       "SELECT * FROM events ORDER BY date_time"
     );
 
-    // Get users for each event
     const eventsWithUsers = await Promise.all(
       eventsResult.rows.map(async (event) => {
         const usersResult = await pool.query(
-          "SELECT name, email FROM users WHERE event_id = $1",
+          `
+          SELECT name, email
+          FROM users
+          WHERE event_id = $1
+          `,
           [event.id]
         );
+
         return {
           ...event,
           registered_users: usersResult.rows,
@@ -113,16 +116,60 @@ const registerForEvent = async (req, res) => {
       success: true,
       registration: registration.rows[0],
       remaining_capacity: capacity - registrations - 1,
-      message: "Successfully registered for event"
+      message: "Successfully registered for event",
     });
-
   } catch (err) {
     console.error("Registration error:", err);
     res.status(500).json({
       error: "Registration processing failed",
-      details: err.message
+      details: err.message,
     });
   }
 };
 
-export { createEvent, getEventsWithUsers, registerForEvent };
+const cancelRegistration = async (req, res) => {
+  const { event_id, email } = req.body;
+
+  if (!event_id || typeof event_id !== "string" || event_id.trim() === "") {
+    return res.status(400).json({ error: "Invalid or missing event_id." });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || typeof email !== "string" || !emailRegex.test(email)) {
+    return res.status(400).json({ error: "Invalid or missing email." });
+  }
+
+  try {
+    const userCheck = await pool.query(
+      `SELECT * FROM users WHERE event_id = $1 AND email = $2`,
+      [event_id, email]
+    );
+
+    if (userCheck.rowCount === 0) {
+      return res.status(404).json({ error: "User is not registered for this event." });
+    }
+
+    await pool.query(
+      `DELETE FROM users WHERE event_id = $1 AND email = $2`,
+      [event_id, email]
+    );
+
+    await pool.query(
+      `UPDATE events SET registrations = registrations - 1 WHERE id = $1`,
+      [event_id]
+    );
+
+    return res.status(200).json({ message: "Registration cancelled successfully." });
+
+  } catch (err) {
+    console.error("Error cancelling registration:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export {
+  createEvent,
+  getEventsWithUsers,
+  registerForEvent,
+  cancelRegistration,
+};
