@@ -1,0 +1,50 @@
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS system files
+.DS_Store
+Thumbs.db
+
+# Debug files
+*.pid
+*.seed
+
+# Build output
+dist/
+build/
+
+# Coverage reports
+coverage/
+
+# Optional cache
+.cache/
+.nyc_output/
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# PM2 process logs
+pids/
+*.pid
+*.log
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+*.tgz
