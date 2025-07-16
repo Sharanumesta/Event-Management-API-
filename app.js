@@ -5,7 +5,7 @@ const app = express();
 app.use(json());
 
 import eventRouter from "./src/routes/event.router.js";
-app.use('/api/event', eventRouter);
+app.use('/api/v1/event', eventRouter);
 
 app.use(errorHandler);
 

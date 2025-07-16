@@ -128,7 +128,7 @@ const registerForEvent = async (req, res) => {
 };
 
 const cancelRegistration = async (req, res) => {
-  const { event_id, email } = req.body;
+  const { event_id, email } = req.params;
 
   if (!event_id || typeof event_id !== "string" || event_id.trim() === "") {
     return res.status(400).json({ error: "Invalid or missing event_id." });
@@ -146,24 +146,95 @@ const cancelRegistration = async (req, res) => {
     );
 
     if (userCheck.rowCount === 0) {
-      return res.status(404).json({ error: "User is not registered for this event." });
+      return res
+        .status(404)
+        .json({ error: "User is not registered for this event." });
     }
 
-    await pool.query(
-      `DELETE FROM users WHERE event_id = $1 AND email = $2`,
-      [event_id, email]
-    );
+    await pool.query(`DELETE FROM users WHERE event_id = $1 AND email = $2`, [
+      event_id,
+      email,
+    ]);
 
     await pool.query(
       `UPDATE events SET registrations = registrations - 1 WHERE id = $1`,
       [event_id]
     );
 
-    return res.status(200).json({ message: "Registration cancelled successfully." });
-
+    return res
+      .status(200)
+      .json({ message: "Registration cancelled successfully." });
   } catch (err) {
     console.error("Error cancelling registration:", err);
     return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+const upcomingEvents = async (req, res) => {
+  try {
+    const currentTime = new Date().toISOString();
+
+    const result = await pool.query(
+      `SELECT id, title, date_time, location, capacity, registrations
+       FROM events
+       WHERE date_time > $1
+       ORDER BY date_time ASC, location ASC`,
+      [currentTime]
+    );
+
+    res.status(200).json({
+      count: result.rows.length,
+      events: result.rows.map(
+        (event) => ({
+          title: event.title,
+          date: event.date_time,
+          location: event.location,
+        })
+        // events: result.rows.map((event) => ({
+        //   ...event,
+        //   available_spots: event.capacity - event.registrations,
+        //   registration_percentage: Math.round(
+        //     (event.registrations / event.capacity) * 100
+        //   ),
+        // })),
+      ),
+    });
+  } catch (err) {
+    console.error("Error fetching upcoming events:", err);
+    res.status(500).json({
+      error: "Failed to retrieve upcoming events",
+      details: err.message,
+    });
+  }
+};
+
+const eventStats = async (req, res) => {
+  const { event_id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT capacity, registrations
+       FROM events
+       where id = $1`,
+      [event_id]
+    );
+
+    res.status(200).json({
+      count: result.rows.length,
+      events: result.rows.map((event) => ({
+        event_id: event.event_id,
+        registration: event.registrations,
+        available_spots: event.capacity - event.registrations,
+        registration_percentage: Math.round(
+          (event.registrations / event.capacity) * 100
+        ),
+      })),
+    });
+  } catch (err) {
+    console.error("Error fetching events stats:", err);
+    res.status(500).json({
+      error: "Failed to retrieve events stats",
+      details: err.message,
+    });
   }
 };
 
@@ -172,4 +243,6 @@ export {
   getEventsWithUsers,
   registerForEvent,
   cancelRegistration,
+  upcomingEvents,
+  eventStats,
 };
