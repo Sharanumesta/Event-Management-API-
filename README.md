@@ -301,16 +301,13 @@ Make sure to set the environment variables as needed for local or production tes
 
 - Built with [Node.js](https://nodejs.org/), [Express.js](https://expressjs.com/), and [PostgreSQL](https://www.postgresql.org/)
 - Tested with [Postman](https://www.postman.com/)
-- Hosted on [Render](https://render.com/)
+- Database hosted on [Render](https://render.com/)
+
 
 ## Contributing
 
 Contributions, issues and feature requests are welcome!  
 Feel free to open a pull request or raise an issue.
-
-## 📄 License
-
-This project is [MIT](LICENSE) licensed.
 
 ## 📫 Contact
 
